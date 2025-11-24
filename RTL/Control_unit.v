@@ -13,9 +13,9 @@ module Control_unit(
     output reg [1:0] pc_src,
 
     // Register addresses
-    output reg [2:0] Rd,
-    output reg [2:0] Rs1,
-    output reg [2:0] Rs2,
+    output reg [2:0] Rd_addr,
+    output reg [2:0] Rs1_addr,
+    output reg [2:0] Rs2_addr,
     
     // Immediate
     output reg [8:0] imm
@@ -139,14 +139,14 @@ always @* begin
     endcase
 
     // Default register addresses
-    Rd = instruction[11:9];          // Destination register
-    Rs1 = instruction[8:6];          // 1st source register
+    Rd_addr = instruction[11:9];          // Destination register
+    Rs1_addr = instruction[8:6];          // 1st source register
 
     // MUX to choose 2nd source register's bit slice
     if (reg_src == 1'b0) begin
-        Rs2 = instruction[5:3]; 
+        Rs2_addr = instruction[5:3]; 
     end else if (reg_src == 1'b1) begin      
-        Rs2 = instruction[11:9];    // Only done for BEQ
+        Rs2_addr = instruction[11:9];    // Only done for BEQ
     end
 
     // MUX to determine which immediate slice to output
