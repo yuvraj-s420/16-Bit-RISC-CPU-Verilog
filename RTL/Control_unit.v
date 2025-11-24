@@ -1,6 +1,5 @@
 module Control_unit(
-    input clk,
-    reg [15:0] instruction,
+    input [15:0] instruction,
 
     // Control signals
     output reg reg_w,
@@ -22,89 +21,141 @@ module Control_unit(
     output reg [8:0] imm
 );
 
-assign OPCODE = instruction[15:12];     // CPU OPCODE to be extracted 
-
-// Default register addresses
-assign Rd = instruction[11:9];          // Destination register
-assign Rs1 = instruction[8:6];          // 1st source register
-assign Rs2 = instruction[5:3];          // 2nd source register
+// CPU OPCODE to be extracted 
+wire [3:0] OPCODE = instruction[15:12];     
 
 // Internal immediate slices
-wire imm6 = instruction[5:0];   // For instructions that use Rd, Rs1, but no Rs2 (EX: ADDI, SUBI, BEQ)            
-wire imm9 = instruction[8:0];   // For instructions that use only Rd or JUMP (LOAD, LOADI, STORE, JUMP)
+wire [5:0] imm6 = instruction[5:0];   // For instructions that use Rd, Rs1, but no Rs2 (EX: ADDI, SUBI, BEQ)            
+wire [8:0] imm9 = instruction[8:0];   // For instructions that use only Rd or JUMP (LOAD, LOADI, STORE, JUMP)
 
 always @* begin
     
-    // Deafult control signals
+    // DEFAULT CONTROL SIGNALS
     reg_w = 1'b0;           // Don't write
     mem_r = 1'b0;           // Don't read
-    mem_w = 1'b0;           // Dont't write
+    mem_w = 1'b0;           // Don't write
     alu_src = 1'b0;         // in2 is Rs2
-    //reg_src = 1'b0; might not need
-    imm_src = 1'b1;         // Use 9 bit slice
+    reg_src = 1'b0;         // Rs2 is bits 5:3
+    imm_src = 1'b0;         // Use 6 bit slice
     reg_w_from = 2'b00;     // Write from ALU
     pc_src = 2'b00;         // Basic increment (PC = PC + !)
 
+    // Assign control signals based off OPCODE
     case (OPCODE)
         4'b0000: begin // HALT (Stop execution)
+            pc_src = 2'b11;
         end
+
         4'b0001: begin // ADD (R-type: Rd = Rs1 + Rs2)
             alu_OP = 3'b001;
+            reg_w = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b0010: begin // ADDI (I-type: Rd = Rs1 + imm)
             alu_OP = 3'b001;
+            reg_w = 1'b1;
+            alu_src = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b0011: begin // SUB (R-type: Rd = Rs1 - Rs2)
             alu_OP = 3'b010;
+            reg_w = 1'b1;
+            reg_w_from = 2'b00;
         end
         
         4'b0100: begin // SUBI (I-type: Rd = Rs1 - imm)
             alu_OP = 3'b010;
+            reg_w = 1'b1;
+            alu_src = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b0101: begin // AND (R-type: Rd = Rs1 & Rs2)
             alu_OP = 3'b100;
+            reg_w = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b0110: begin // OR (R-type: Rd = Rs1 | Rs2)
             alu_OP = 3'b101;
+            reg_w = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b0111: begin // NOT (R-type: Rd = ~Rs1)
             alu_OP = 3'b011;
+            reg_w = 1'b1;
+            reg_w_from = 2'b00;
         end
         
         4'b1000: begin // LSL (I-type: Rd = Rd << imm)
             alu_OP = 3'b110;
+            reg_w = 1'b1;
+            alu_src = 1'b1;
+            reg_w_from = 2'b00;
         end
+
         4'b1001: begin // LSR (I-type: Rd = Rd >> imm)
             alu_OP = 3'b111;
+            reg_w = 1'b1;
+            alu_src = 1'b1;
+            reg_w_from = 2'b00;
         end
-        4'b1010: begin // LOAD (I-type: Rd = Mem[address], implied Rs1 + imm)
-        
+
+        4'b1010: begin // LOAD (I-type: Rd = Mem[address])
+            reg_w = 1'b1;
+            mem_r = 1'b1;
+            imm_src = 1'b1;
+            reg_w_from = 2'b01;
         end
+
         4'b1011: begin // LOADI (I-type: Rd = immediate)
-
+            reg_w = 1'b1;
+            imm_src = 1'b1;
+            reg_w_from = 2'b10;
         end
         
-        4'b1100: begin // STORE (I-type: Mem[address] = Rd, implied Rs1 + imm)
-
+        4'b1100: begin // STORE (I-type: Mem[address] = Rd)
+            mem_w = 1'b1;
+            imm_src = 1'b1;
         end
+
         4'b1101: begin // JUMP (J-type: PC = address)
-
+            imm_src = 1'b1;
+            pc_src = 2'b01;
         end
+
         4'b1110: begin // BEQ (I-type: if Rs1 == Rs2, PC += offset)
             alu_OP = 3'b010;    // Subtract to determine zero_flag
+            reg_src = 1'b1;
+            pc_src = 2'b10;
         end
-        4'b1111: begin // RESERVED or NOP
 
+        4'b1111: begin  // UNUSED
         end
-        
-        default: begin
-            // Default case ensures all control signals are explicitly handled
-            // Set to NOP or HALT to ensure safe operation
-        end
+
     endcase
+
+    // Default register addresses
+    Rd = instruction[11:9];          // Destination register
+    Rs1 = instruction[8:6];          // 1st source register
+
+    // MUX to choose 2nd source register's bit slice
+    if (reg_src == 1'b0) begin
+        Rs2 = instruction[5:3]; 
+    end else if (reg_src == 1'b1) begin      
+        Rs2 = instruction[11:9];    // Only done for BEQ
+    end
+
+    // MUX to determine which immediate slice to output
+    if (imm_src == 1'b0) begin
+        imm = {3{imm6[5]}, imm6};   // Sign extend (copy MSB to the rest of the bits)
+    end else begin
+        imm = imm9;
+    end
 
 end
 
-
-    
 endmodule
