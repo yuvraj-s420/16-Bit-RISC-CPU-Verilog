@@ -25,7 +25,7 @@ reg [15:0] reg_mem [7:0];                   // Array of 8 items each holding 16 
 always @(posedge clk) begin
 
     if (reg_w) begin                        // reg_w control signal determines whether to write
-        reg_mem[Rd_addr] = writeback_data;
+        reg_mem[Rd_addr] <= writeback_data;
     end
     
 end

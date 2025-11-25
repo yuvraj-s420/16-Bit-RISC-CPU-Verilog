@@ -23,7 +23,7 @@ reg [15:0] mem [511:0]      // RAM consisting of 512 locations of 16 bit words
 always @(posedge clk) begin
 
     if (mem_w) begin
-        mem[addr] = write_data;
+        mem[addr] <= write_data;
     end
 
 end
