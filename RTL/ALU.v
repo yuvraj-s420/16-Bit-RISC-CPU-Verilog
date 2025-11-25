@@ -1,15 +1,15 @@
 module ALU(
-    input clk,
     reg [2:0] alu_OP
-    input in1,
-    input in2,
-    output out,
+    input [15:0] in1,
+    input [15:0] in2,
+    output [15:0] out,
     output overflow_f,
     output zero_f,
     output sign_f
 )
 
-always @ (posedge clk) begin
+// Asynchronous updating
+always @* begin
     
     /* 
     Executes instruction based on the ALU's input OPCODE. This opcode is different from the opcode 
@@ -32,6 +32,7 @@ always @ (posedge clk) begin
 
     // Set flags based on the ALU output data
     // Where are these flags going to be used?
+    
 
 
 end
