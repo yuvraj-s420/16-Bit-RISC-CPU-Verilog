@@ -8,7 +8,7 @@ module Instruction_file (
 reg [15:0] instruction_mem [511:0];  // 512 lines of 16 bit instructions
 
 always @(posedge clk) begin
-    instruction = instruction_mem[addr];
+    instruction <= instruction_mem[addr];
 end
 
 endmodule
