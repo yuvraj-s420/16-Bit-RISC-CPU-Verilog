@@ -12,15 +12,15 @@ always @(posedge clk) begin
     
     case (pc_src)
 
-        2'b00: begin            // Normal increment
+        2'b00: begin                                                // Normal increment
             instr_next_addr <= instr_curr_addr + 9'b000000001;
         end
 
-        2'b01: begin            // JUMP to immediate
+        2'b01: begin                                                // JUMP to immediate
             instr_next_addr <= imm;
         end
 
-        2'b10: begin            // BEQ with signed offset
+        2'b10: begin                                                // BEQ with signed offset
             if (zero_f) begin
                 instr_next_addr <= instr_curr_addr + imm;
             end else begin
@@ -28,7 +28,7 @@ always @(posedge clk) begin
             end
         end
 
-        2'b11: begin            // HALT by stopping increment
+        2'b11: begin                                                // HALT by stopping increment
             instr_next_addr <= instr_curr_addr;
         end
 
