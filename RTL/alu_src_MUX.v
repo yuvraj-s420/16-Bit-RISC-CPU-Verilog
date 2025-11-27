@@ -8,6 +8,16 @@ module alu_src_MUX (
     output reg [15:0] out
 );
 
+// Asynchronous updating
+always @* begin
 
+    case (alu_src)
+        
+        1'b0: out = Rs2_data;
+        1'b1: out = {7{imm[8]}, imm};    // Sign extend to ensure matching bit size in ALU operations
+
+    endcase
+
+end
     
 endmodule
