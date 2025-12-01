@@ -16,7 +16,8 @@ module Register_file(
 
     // Output data
     output reg [15:0] out_1,
-    output reg [15:0] out_2
+    output reg [15:0] out_2,
+    output reg [15:0] Rd_out
 );
 
 reg [15:0] reg_mem [7:0];                   // Array of 8 items each holding 16 bits of data
@@ -35,6 +36,7 @@ always @* begin
 
     out_1 = reg_mem[Rs1_addr];
     out_2 = reg_mem[Rs2_addr];
+    Rd_out = reg_mem[Rd_addr];
 
 end
 
