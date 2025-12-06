@@ -17,7 +17,7 @@ module Memory_file (
     output reg [15:0] out
 );
 
-reg [15:0] mem [511:0]      // RAM consisting of 512 locations of 16 bit words
+reg [15:0] mem [511:0];      // RAM consisting of 512 locations of 16 bit words
 
 // Synchronous writing 
 always @(posedge clk) begin

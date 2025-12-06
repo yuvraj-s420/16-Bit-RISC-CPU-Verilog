@@ -2,8 +2,7 @@ module CPU_top_level (
 
     // External ports
     input clk,
-    input cpu_rst,
-
+    input cpu_rst
 );
 
 // ============= Internal wires used to connect ports between modules ============= 
@@ -38,7 +37,7 @@ wire zero_f_alu, overflow_f_alu;
 wire [15:0] Rd_writeback_data;
 
 
-// ========================== Module instatiations ==========================
+// ========================== Module Instantiations ==========================
 
 // Outputs instruction data based on address
 Instruction_file if1(
@@ -52,12 +51,13 @@ Control_unit cu1(
     .instruction (instruction_data),
     .reg_w (reg_w_ctrl),
     .mem_r (mem_r_ctrl),
-    .mem_w (mem_r_ctrl),
+    .mem_w (mem_w_ctrl),
     .alu_src (alu_src_ctrl),
     .reg_src (reg_src_ctrl),
     .reg_w_from (reg_w_from_ctrl),
     .pc_src (pc_src_ctrl),
     .alu_OP (alu_OP_ctrl),
+    .imm_src (imm_src_ctrl),
     .Rd_addr (Rd_addr_ctrl),
     .Rs1_addr (Rs1_addr_ctrl),
     .Rs2_addr (Rs2_addr_ctrl),
@@ -73,7 +73,8 @@ Register_file rf1(
     .reg_w (reg_w_ctrl),
     .writeback_data (Rd_writeback_data),
     .out_1 (Rs1_data_out),
-    .out_2 (Rs2_data_out)
+    .out_2 (Rs2_data_out),
+    .Rd_out (Rd_data_out)
 );
 
 // Addresses or updates RAM

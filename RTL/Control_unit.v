@@ -1,4 +1,6 @@
 module Control_unit(
+
+    // Fetched from IR
     input [15:0] instruction,
 
     // Control signals
@@ -25,10 +27,13 @@ module Control_unit(
 wire [3:0] OPCODE = instruction[15:12];     
 
 // Internal immediate slices
-wire [5:0] imm6 = instruction[5:0];   // For instructions that use Rd, Rs1, but no Rs2 (EX: ADDI, SUBI, BEQ)            
-wire [8:0] imm9 = instruction[8:0];   // For instructions that use only Rd or JUMP (LOAD, LOADI, STORE, JUMP)
+reg [5:0] imm6;   // For instructions that use Rd, Rs1, but no Rs2 (EX: ADDI, SUBI, BEQ)            
+reg [8:0] imm9;   // For instructions that use only Rd or JUMP (LOAD, LOADI, STORE, JUMP)
 
 always @* begin
+    
+    imm6 = instruction[5:0];
+    imm9 = instruction[8:0];
     
     // DEFAULT CONTROL SIGNALS
     reg_w = 1'b0;           // Don't write
@@ -133,7 +138,7 @@ always @* begin
             pc_src = 2'b10;
         end
 
-        4'b1111: begin  // UNUSED
+        default: begin      // Defaults assigned before switch statement are used
         end
 
     endcase
@@ -151,7 +156,7 @@ always @* begin
 
     // MUX to determine which immediate slice to output
     if (imm_src == 1'b0) begin
-        imm = {3{imm6[5]}, imm6};   // Sign extend (copy MSB to the rest of the bits)
+        imm = {{3{imm6[5]}}, imm6};   // Sign extend (copy MSB to the rest of the bits)
     end else begin
         imm = imm9;
     end

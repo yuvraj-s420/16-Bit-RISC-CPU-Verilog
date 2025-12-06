@@ -3,7 +3,7 @@ module PC (
     input [8:0] instr_curr_addr,        // Current address
     input [8:0] imm,                    // Immediate to be used by JUMP/ BEQ (already sign extended)
     input [1:0] pc_src,                 // Control signal to select instr_next
-    input zero_f                        // Zero flag to enable BEQ
+    input zero_f,                       // Zero flag to enable BEQ
     output reg [8:0] instr_next_addr    // Next address
 );
 

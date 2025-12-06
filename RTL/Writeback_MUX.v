@@ -10,7 +10,6 @@ module Writeback_MUX (
 
     // Output data to be sent to Register_file
     output reg [15:0] out
-
 );
     
 // Asynchronous updating
@@ -20,9 +19,9 @@ always @* begin
         2'b00: out = alu_out;           // ADD, ADDI, SUB, SUBI, AND, OR, NOT, LSL, LSR
         2'b01: out = ram_out;           // LOAD
         2'b10: begin                    // LOADI
-            out = {7{imm[8]}, imm};     // Sign extend immediate to 16 bits 
+            out = {{7{imm[8]}}, imm};     // Sign extend immediate to 16 bits 
         end
-        2'b11: out = 16'h0000;          // Unused, set out to 0 for safety
+        default: out = 16'h0000;         // 2'b11 Unused, set out to 0 for safety
         
     endcase
 end
