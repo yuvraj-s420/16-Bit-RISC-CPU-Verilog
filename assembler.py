@@ -47,7 +47,7 @@ def translateFolder(folder_in: str, folder_out:str):
         break       # Only look in root of folder (no subdirectories)
 
     if len(errors) != 0:
-        print(f"==================== ERRORS ====================")
+        print(f"============================== ERRORS SUMMARY ==============================")
         counter = 0
         for error in errors:
             print(f"=={counter+1}== \t {error}")
@@ -76,21 +76,27 @@ def translateFile(input_asm_file: str, output_machine_file: str, errors: list):
     # Iterate through each line in the assembly file
     for line in asm_file:
 
+        line = line.upper()                   
+
+        if line.find("//") != -1:
+            line = line[:line.find("//")]                       # Terminate line right before comments (//) start
+
         words = line.split()                                    # Split line by spaces, newlines, tabs
         
-        # If line is empty (newline) skip, and go to next line
+        # If line is not empty, skip, and go to next line
         if len(words) != 0:
-            instruction, success = translateLine(words)         # Attempt translate
+            instruction, success, error_type = translateLine(words)         # Attempt translate
 
             if not success:
-                error = f"{name} at line: {line_count}"
+                error = f"{name} at line: {line_count}\t{error_type}"
                 errors.append(error)
 
             else:
                 # Write the constructed binary instruction to file
                 machine_file.write(instruction)
-
-        machine_file.write("\n")
+                
+            machine_file.write("\n")
+        
         line_count += 1
 
     asm_file.close()
@@ -99,14 +105,27 @@ def translateFile(input_asm_file: str, output_machine_file: str, errors: list):
 def translateLine(words: list) -> tuple:
     # Translates full line and returns the binary instruction
 
-    opcode, i_type, success_1 = getOpcode(words[0])
-    rest, success_2 = getRestOfInstruction(i_type, words)
+    first_word = words[0]
+
+    opcode, i_type, success_1 = getOpcode(first_word)
+    rest, success_2, error_2 = getRestOfInstruction(i_type, words)
     success = success_1 and success_2
     instruction = opcode + rest
 
+    error_type = ""
+
+    if not success_1:
+        error_type = f"Instruction \"{first_word}\" does not exist"               # Opcode did not match instruction set
+    elif error_2 == "i":
+        error_type = "Invalid format for instruction"    # Formatting of instruction was invalid
+    elif error_2 == "r":
+        error_type = "Invalid register (R0 - R7 only)"   # Register was not between R0 and R7
+    elif error_2 == "l":
+        error_type = "Length of immediate does not match instruction"
+
     #print(f"instruction: {instruction}, final success {success}\n")
 
-    return instruction, success
+    return instruction, success, error_type
 
 
 def getOpcode(word: str) -> tuple:
@@ -123,6 +142,7 @@ def getOpcode(word: str) -> tuple:
     match word:
         case "HALT":
             opcode = "0000"
+            i_type = "H"
         case "ADD":
             opcode = "0001"
             i_type = "R_n"
@@ -143,7 +163,7 @@ def getOpcode(word: str) -> tuple:
             i_type = "R_n"
         case "NOT":
             opcode = "0111"
-            i_type = "R_s"
+            i_type = "R_s_not"
         case "LSL":
             opcode = "1000"
             i_type = "R_s"
@@ -177,8 +197,8 @@ def getRestOfInstruction(i_type: str, words: list) -> tuple:
     # Each i_type has a different way of extracting the words
 
     rest = ""
-
     success = True
+    error = ""
 
     try:
         match i_type:
@@ -192,34 +212,76 @@ def getRestOfInstruction(i_type: str, words: list) -> tuple:
                 rest += decodeRegAddress(words[1])  # Rd
                 rest += decodeRegAddress(words[2])  # Rs1
                 rest += "00"                        # Unused
-                rest += words[3]                    # imm (4 bit, exception for not?)
+                
+                imm = words[3]                      # imm (4 bit, for LSL, LSR)
 
+                if len(imm) != 4:
+                    success = False
+                    error = "l"
+                else:
+                    rest += imm
+
+            
+            case "R_s_not":
+                rest += decodeRegAddress(words[1])  # Rd
+                rest += decodeRegAddress(words[2])  # Rs1
+                rest += "000000"                    # Unused
+ 
             case "I_n":
                 rest += decodeRegAddress(words[1])  # Rd
                 rest += decodeRegAddress(words[2])  # Rs1
-                rest += words[3]                    # imm (6 bit)
+                imm = words[3]                      # imm (6 bit)
+
+                if len(imm) != 6:
+                    success = False
+                    error = "l"
+                else:
+                    rest += imm
 
             case "I_s":
                 rest += decodeRegAddress(words[1])  # Rd
-                rest += words[2]                    # imm (9 bit)
+                imm = words[2]                    # imm (9 bit)
+
+                if len(imm) != 9:
+                    success = False
+                    error = "l"
+                else:
+                    rest += imm
             
             case "J_n":
                 rest += "000"                       # Unused
-                rest += words[1]                    # imm (9 bit) 
+                imm = words[1]                      # imm (9 bit) 
+
+                if len(imm) != 9:
+                    success = False
+                    error = "l"
+                else:
+                    rest += imm
                 
             case "J_s":
                 rest += decodeRegAddress(words[1])  # Rs2
                 rest += decodeRegAddress(words[2])  # Rs1
-                rest += words[3]                    # imm (6 bit signed)
+                imm = words[3]                      # imm (6 bit signed)
+
+                if len(imm) != 6:
+                    success = False
+                    error = "l"
+                else:
+                    rest += imm
+            
+            case "H":                               # Ignores everything after opcode
+                rest += "000000000000"
     
     except IndexError:
         success = False
+        error = "i"
     except ValueError:
         success = False
+        error = "r"
 
     #print(f"rest: {rest}, success: {success}\n")
     
-    return rest, success
+    return rest, success, error
 
 
 def decodeRegAddress(reg: str) -> str:
